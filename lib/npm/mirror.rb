@@ -36,11 +36,10 @@ module Npm
 
       def id
         l = @pool.size.to_s.size
-        master = 'Master'.ljust(%w(Thread- Master).map(&:size).max + l)
         if Thread.current[:id]
           "Thread-#{Thread.current[:id].to_s.rjust(l, '0')}"
         else
-          master
+          'Master'.ljust(%w(Thread- Master).map(&:size).max + l)
         end
       end
 
@@ -85,22 +84,32 @@ module Npm
 
         json = JSON.load resp.body
         json.each_key do |k|
-          @pool.enqueue_job do
-            resp = fetch from(k), to(k)
-            json = JSON.load resp.body
-            json = tarball_links json
-            mtime = resp['last-modified'] || resp['date']
-            write_file to(k, 'index.json'), json.to_json, mtime
-          end unless k.start_with? '_'
+          @pool.enqueue_job(k) { fetch_package } unless k.start_with? '_'
         end
         write_file path, resp.body
       end
 
+      def fetch_package(package)
+        url = from package
+        path = to package, 'index.json'
+        resp = fetch url, path
+        json = JSON.load resp.body
+        json = tarball_links json
+        mtime = resp['last-modified'] || resp['date']
+        write_file path, json.to_json, mtime
+      end
+
+      def fetch_tarball(tarball_uri)
+        url = from tarball_uri
+        path = to tarball_uri
+        resp = fetch url, path
+        mtime = resp['last-modified'] || resp['date']
+        write_file path, json.to_json, mtime
+      end
+
       def write_file(path, bytes, mtime = nil)
         FileUtils.mkdir_p File.dirname(path)
-        File.open(path, 'wb') do |f|
-          f << bytes
-        end
+        File.open(path, 'wb') { |f| f << bytes }
         mtime = Time.rfc822 mtime if mtime
         File.utime(mtime, mtime, path) if mtime
       end
@@ -109,14 +118,9 @@ module Npm
         json.each do |k, v|
           if v.is_a? Hash
             if v['shasum'] && v['tarball'] && v['tarball'].start_with?(@from)
-              tarball = v['tarball']
-              path = tarball.split(/^#{@from}/, 2).last
-              v['tarball'] = link path
-              @pool.enqueue_job do
-                resp = fetch from(path), to(path)
-                mtime = resp['last-modified'] || resp['date']
-                write_file to(path), resp.body, mtime
-              end
+              tarball = v['tarball'].split(/^#{@from}/, 2).last
+              v['tarball'] = link tarball
+              @pool.enqueue_job(tarball) { fetch_tarball }
             else
               json[k] = tarball_links v
             end

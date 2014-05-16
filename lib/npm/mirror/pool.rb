@@ -31,14 +31,16 @@ module Npm
           @threads.each { |t| t.join 0.2 }
           l = @size.to_s.size
           master = 'Master'.ljust(%w(Thread- Master).map(&:size).max + l)
-          puts "[#{master}] Queue size: #{@queue.size}, Waiting thread: \
-              #{@queue.num_waiting}"
+          puts "[#{master}] Queue size: #{@queue.size}, Waiting thread: " \
+               "#{@queue.num_waiting}"
         end
 
+        terminate
+      end
+
+      def terminate
         @size.times do
-          enqueue_job do
-            throw :exit
-          end
+          enqueue_job { throw :exit }
         end
 
         @threads.each { |t| t.join 0.2 }
@@ -49,5 +51,5 @@ module Npm
         @queue << [block, args]
       end
     end  # class Pool
-  end
-end  # module Npm::Mirror
+  end  # Mirror
+end  # module Npm
