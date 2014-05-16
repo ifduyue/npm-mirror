@@ -8,9 +8,16 @@ module Npm
       def initialize(size)
         @size = size
         @queue = Queue.new
+        @running = false
+      end
+
+      def running?
+        @running
       end
 
       def run
+        return if running?
+        @running = true
         @threads = Array.new(@size) do |i|
           Thread.new do
             Thread.current[:id] = i
@@ -39,6 +46,9 @@ module Npm
       end
 
       def terminate
+        return unless running?
+
+        @running = false
         @size.times do
           enqueue_job { throw :exit }
         end

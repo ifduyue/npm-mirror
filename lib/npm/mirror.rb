@@ -88,6 +88,7 @@ module Npm
         fail Error, "Failed to fetch #{url}" if resp.nil?
 
         json = JSON.load resp.body
+        @pool.run
         json.each_key do |k|
           @pool.enqueue_job(k, &method(:fetch_package)) unless k.start_with? '_'
         end
