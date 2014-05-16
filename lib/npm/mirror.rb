@@ -147,7 +147,7 @@ module Npm
           File.join path, '.etag'
         else
           dirname, basename = File.split path
-          File.join dirname, ".#{basename}"
+          File.join dirname, ".#{basename}.etag"
         end
       end
 
