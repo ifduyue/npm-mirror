@@ -163,7 +163,7 @@ module Npm
       end
 
       def mtime_for(path)
-        if path.nil
+        if path.nil?
           nil
         elsif File.exist?(path)
           File.stat(path).mtime.rfc822
