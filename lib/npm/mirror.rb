@@ -46,9 +46,12 @@ module Npm
       def fetch(url, path = nil)
         puts "[#{id}] Fetching #{url}"
         uri = URI url
-        mtime = File.exist?(path) ? File.stat(path).mtime.rfc822 : nil if path
+        mtime = mtime_for path
+        etag = etag_for path
+
         req = Net::HTTP::Get.new uri.path
         req.add_field 'If-Modified-Since', mtime if mtime
+        req.add_field 'If-None-Match', etag if etag
 
         begin
           resp = @http.request uri, req
@@ -60,11 +63,13 @@ module Npm
 
         puts "[#{id}] Fetched(#{resp.code}): #{uri}"
         case resp.code.to_i
-        when 304
-        when 302
+        when 301  # Moved
+        when 302  # Found
           return fetch resp['location'], path
         when 200
           return resp
+        when 304  # Not modified
+          return nil
         when 403
           puts "[#{id}] #{resp.code} on #{uri}"
           return nil
@@ -86,32 +91,33 @@ module Npm
         json.each_key do |k|
           @pool.enqueue_job(k) { fetch_package } unless k.start_with? '_'
         end
-        write_file path, resp.body
+        write_file path, resp.body, resp['last-modified'], resp['etag']
       end
 
       def fetch_package(package)
         url = from package
         path = to package, 'index.json'
         resp = fetch url, path
+        return if resp.nil?
         json = JSON.load resp.body
         json = tarball_links json
-        mtime = resp['last-modified'] || resp['date']
-        write_file path, json.to_json, mtime
+        write_file path, json.to_json, resp['last-modified'], resp['etag']
       end
 
       def fetch_tarball(tarball_uri)
         url = from tarball_uri
         path = to tarball_uri
         resp = fetch url, path
-        mtime = resp['last-modified'] || resp['date']
-        write_file path, json.to_json, mtime
+        return if resp.nil?
+        write_file path, json.to_json, resp['last-modified'], resp['etag']
       end
 
-      def write_file(path, bytes, mtime = nil)
+      def write_file(path, bytes, mtime = nil, etag = nil)
         FileUtils.mkdir_p File.dirname(path)
         File.open(path, 'wb') { |f| f << bytes }
         mtime = Time.rfc822 mtime if mtime
         File.utime(mtime, mtime, path) if mtime
+        File.open(path_for_etag(path), 'wb') { |f| f << etag } if etag
       end
 
       def tarball_links(json)
@@ -132,6 +138,38 @@ module Npm
       def run
         fetch_index
         @pool.run_til_done
+      end
+
+      def path_for_etag(path)
+        if path.nil?
+          nil
+        elsif File.directory? path
+          File.join path, '.etag'
+        else
+          dirname, basename = File.split path
+          File.join dirname, ".#{basename}"
+        end
+      end
+
+      def etag_for(path)
+        etag_path = path_for_etag path
+        if !etag_path
+          nil
+        elsif File.file?(etag_path) && File.readable?(etag_path)
+          File.open(etag_path, 'rb') { |f| f.readline.strip }
+        else
+          nil
+        end
+      end
+
+      def mtime_for(path)
+        if path.nil
+          nil
+        elsif File.exist?(path)
+          File.stat(path).mtime.rfc822
+        else
+          nil
+        end
       end
     end
   end
