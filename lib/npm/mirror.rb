@@ -89,7 +89,7 @@ module Npm
 
         json = JSON.load resp.body
         json.each_key do |k|
-          @pool.enqueue_job(k) { fetch_package } unless k.start_with? '_'
+          @pool.enqueue_job(k, &method(:fetch_package)) unless k.start_with? '_'
         end
         write_file path, resp.body, resp['last-modified'], resp['etag']
       end
@@ -126,7 +126,7 @@ module Npm
             if v['shasum'] && v['tarball'] && v['tarball'].start_with?(@from)
               tarball = v['tarball'].split(/^#{@from}/, 2).last
               v['tarball'] = link tarball
-              @pool.enqueue_job(tarball) { fetch_tarball }
+              @pool.enqueue_job(tarball, &method(:fetch_tarball))
             else
               json[k] = tarball_links v
             end
