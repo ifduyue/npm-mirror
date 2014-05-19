@@ -37,7 +37,7 @@ Serving via Nginx
         location /npm/ {
             index index.json;
 
-            location ~ /\.index\.json.etag$ {
+            location ~ \.etag$ {
                 return 404;
             }
 
