@@ -150,7 +150,7 @@ module Npm
                 tarball = v['tarball'].split(/^#{@from}/, 2).last
                 v['tarball'] = link tarball
               elsif v['tarball'].start_with?(@server)
-                tarball = v['tarball'].split(/^#{server}/, 2).last
+                tarball = v['tarball'].split(/^#{@server}/, 2).last
               end
               @pool.enqueue_job(tarball, &method(:fetch_tarball))
             else
