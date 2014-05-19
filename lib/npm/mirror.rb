@@ -109,8 +109,8 @@ module Npm
         url = from tarball_uri
         path = to tarball_uri
         resp = fetch url, path
-        return if resp.nil?
-        write_file path, json.to_json, resp['last-modified'], resp['etag']
+        return if resp.nil? || resp.body.size.zero?
+        write_file path, resp.body, resp['last-modified'], resp['etag']
       end
 
       def write_file(path, bytes, mtime = nil, etag = nil)
