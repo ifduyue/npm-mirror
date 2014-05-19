@@ -44,6 +44,11 @@ Serving via Nginx
             location ~ /index\.json$ {
                 default_type application/json;
             }
+
+            # for npm search
+            location = /npm/-/all/since {
+                rewrite ^ /npm/-/all/;
+            }
         }
     }
 
