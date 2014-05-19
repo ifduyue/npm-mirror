@@ -72,6 +72,9 @@ module Npm
           return nil
         when 404  # couchdb returns json even it's 404
           return resp
+        when 503  # 503 backend read error
+          sleep 10
+          retry
         else
           fail Error, "unexpected response #{resp.inspect}"
         end
