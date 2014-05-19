@@ -101,7 +101,7 @@ module Npm
         resp = fetch url, path
         return if resp.nil?
         json = JSON.load resp.body
-        json = tarball_links json
+        tarball_links json
         write_file path, json.to_json, resp['last-modified'], resp['etag']
       end
 
@@ -129,7 +129,7 @@ module Npm
               v['tarball'] = link tarball
               @pool.enqueue_job(tarball, &method(:fetch_tarball))
             else
-              json[k] = tarball_links v
+              tarball_links v
             end
           end
         end
