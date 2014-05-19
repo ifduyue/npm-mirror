@@ -65,9 +65,8 @@ module Npm
         when 302  # Found
           return fetch resp['location'], path
         when 200
-          return resp
         when 304  # Not modified
-          return nil
+          return resp
         when 403
           puts "[#{id}] #{resp.code} on #{uri}"
           return nil
@@ -85,19 +84,29 @@ module Npm
         resp = fetch url, path
         fail Error, "Failed to fetch #{url}" if resp.nil?
 
-        json = JSON.load resp.body
+        if resp.code == '304'
+          if File.exists? path
+            json = JSON.load(File.open(path, 'rb').read)
+          else
+            json = {}
+          end
+        else
+          json = JSON.load resp.body
+        end
+
         @pool.run
         json.each_key do |k|
           @pool.enqueue_job(k, &method(:fetch_package)) unless k.start_with? '_'
         end
-        write_file path, resp.body, resp['etag']
+
+        write_file path, resp.body, resp['etag'] unless resp.code == '304'
       end
 
       def fetch_package(package)
         url = from package
         path = to package, 'index.json'
         resp = fetch url, path
-        return if resp.nil?
+        return if resp.nil? || resp.code == '304'
         json = JSON.load resp.body
         tarball_links json
         write_file path, json.to_json, resp['etag']
@@ -107,7 +116,7 @@ module Npm
         url = from tarball_uri
         path = to tarball_uri
         resp = fetch url, path
-        return if resp.nil? || resp.body.size.zero?
+        return if resp.nil? || resp.code == 304 || resp.body.size.zero?
         write_file path, resp.body, resp['etag']
       end
 
