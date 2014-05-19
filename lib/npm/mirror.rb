@@ -52,6 +52,9 @@ module Npm
 
         begin
           resp = @http.request uri, req
+          if resp.code == '503'  # 503 backend read error
+            fail Error, '503'
+          end
         rescue => e
           puts "[#{id}] Error fetching #{uri.path}: #{e.inspect}"
           sleep 10
@@ -72,9 +75,6 @@ module Npm
           return nil
         when 404  # couchdb returns json even it's 404
           return resp
-        when 503  # 503 backend read error
-          sleep 10
-          retry
         else
           fail Error, "unexpected response #{resp.inspect}"
         end
