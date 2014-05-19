@@ -44,7 +44,6 @@ module Npm
       end
 
       def fetch(url, path = nil)
-        puts "[#{id}] Fetching #{url}"
         uri = URI url
         etag = etag_for path
 
@@ -68,10 +67,8 @@ module Npm
         when 304  # Not modified
           return resp
         when 403
-          puts "[#{id}] #{resp.code} on #{uri}"
           return nil
         when 404
-          puts "[#{id}] #{resp.code} on #{uri}"
           return resp
         else
           fail Error, "unexpected response #{resp.inspect}"
