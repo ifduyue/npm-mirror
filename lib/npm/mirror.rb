@@ -95,8 +95,16 @@ module Npm
         end
 
         @pool.run
-        json.each_key do |k|
-          @pool.enqueue_job(k, &method(:fetch_package)) unless k.start_with? '_'
+
+        packages = json.keys
+        json = nil
+
+        packages.each_slice(@pool.size * 10) do |slice|
+          slice.each do |package|
+            next if package.start_with? '_'
+            @pool.enqueue_job(package, &method(:fetch_package))
+          end
+          sleep 1
         end
 
         write_file path, resp.body, resp['etag'] unless resp.code == '304'
