@@ -16,6 +16,17 @@ And then execute:
 
     $ bundle exec bin/mirror
 
+Or:
+
+    $ bundle exec bin/mirror path/to/config.yml
+
+Here is an example of config.yml
+
+    - from: http://registry.npmjs.org/
+      to: /tmp/npm/
+      server: http://localhost/
+      parallelism: 10
+
 ## Contributing
 
 1. Fork it ( https://github.com/ifduyue/npm-mirror/fork )
