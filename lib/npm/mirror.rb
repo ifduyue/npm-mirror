@@ -87,7 +87,7 @@ module Npm
         fail Error, "Failed to fetch #{url}" if resp.nil?
 
         if resp.code == '304'
-          if File.exists? path
+          if File.exist? path
             json = JSON.load(File.open(path, 'rb').read)
           else
             json = {}
@@ -99,8 +99,6 @@ module Npm
         @pool.run
 
         packages = json.keys
-        json = nil
-
         packages.each_slice(@pool.size * 10) do |slice|
           slice.each do |package|
             next if package.start_with? '_'
@@ -118,17 +116,23 @@ module Npm
         url = from package
         path = to package, 'index.json'
         resp = fetch url, path
-        return if resp.nil? || resp.code == '304'
-        json = JSON.load resp.body
-        tarball_links json
-        write_file path, json.to_json, resp['etag']
+        return if resp.nil?
+
+        if resp.code == '304'
+          json = JSON.load(File.open(path, 'rb').read)
+          tarball_links json
+        else
+          json = JSON.load resp.body
+          tarball_links json
+          write_file path, json.to_json, resp['etag']
+        end
       end
 
       def fetch_tarball(tarball_uri)
         url = from tarball_uri
         path = to tarball_uri
         resp = fetch url, path
-        return if resp.nil? || resp.code == 304 || resp.body.size.zero?
+        return if resp.nil? || resp.code == '304' || resp.body.size.zero?
         write_file path, resp.body, resp['etag']
       end
 
@@ -139,11 +143,15 @@ module Npm
       end
 
       def tarball_links(json)
-        json.each do |k, v|
+        json.each do |_, v|
           if v.is_a? Hash
-            if v['shasum'] && v['tarball'] && v['tarball'].start_with?(@from)
-              tarball = v['tarball'].split(/^#{@from}/, 2).last
-              v['tarball'] = link tarball
+            if v['shasum'] && v['tarball']
+              if v['tarball'].start_with?(@from)
+                tarball = v['tarball'].split(/^#{@from}/, 2).last
+                v['tarball'] = link tarball
+              elsif v['tarball'].start_with?(@server)
+                tarball = v['tarball'].split(/^#{server}/, 2).last
+              end
               @pool.enqueue_job(tarball, &method(:fetch_tarball))
             else
               tarball_links v
