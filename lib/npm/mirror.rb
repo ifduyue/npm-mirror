@@ -107,7 +107,9 @@ module Npm
           sleep 1
         end
 
-        write_file path, resp.body, resp['etag'] unless resp.code == '304'
+        @pool.enqueue_job do
+          write_file path, resp.body, resp['etag']
+        end unless resp.code == '304'
       end
 
       def fetch_package(package)
