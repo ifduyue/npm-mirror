@@ -11,6 +11,8 @@ module Npm
     class Error < StandardError; end
 
     class Mirror
+      attr_reader :from, :to, :server, :parrellism
+
       def initialize(from = DEFAULT_FROM, to = DEFAULT_TO,
                      server = DEFAULT_SERVER, parrellism = 10)
         @from, @to, @server = from, to, server
@@ -184,6 +186,22 @@ module Npm
           File.open(etag_path, 'rb') { |f| f.readline.strip }
         else
           nil
+        end
+      end
+
+      def correct_tarball_url
+        Dir.glob("#{to}/*/index.json").each do |filename|
+          json = JSON.load(File.open(filename, 'rb').read)
+          next unless json['versions']
+          versions = json['versions'].keys
+          versions.each do |version|
+            next unless json['versions'][version]['dist']
+            tarball = URI json['versions'][version]['dist']['tarball']
+            tarball = link tarball.request_uri
+            json['versions'][version]['dist']['tarball'] = tarball
+          end
+          File.open(filename, 'wb') { |f| f << json.to_json }
+          puts filename
         end
       end
     end
