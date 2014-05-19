@@ -103,7 +103,7 @@ module Npm
             next if package.start_with? '_'
             @pool.enqueue_job(package, &method(:fetch_package))
           end
-          sleep 1
+          sleep 0.5
         end
 
         @pool.enqueue_job do
