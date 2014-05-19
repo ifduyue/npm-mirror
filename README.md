@@ -23,9 +23,32 @@ Or:
 Here is an example of config.yml
 
     - from: http://registry.npmjs.org/
-      to: /tmp/npm/
-      server: http://localhost/
+      to: /data/mirrors/npm
+      server: http://mymirrors.com/npm/
       parallelism: 10
+
+Serving via Nginx
+
+        server {
+            listen 0.0.0.0:80;
+            server_name mymirrors.com;
+            root /data/mirrors/;
+            location /npm/ {
+                index index.json;
+
+                location ~ /\.index\.json.etag$ {
+                    return 404;
+                }
+
+                location ~ /index\.json$ {
+                    default_type application/json;
+                }
+            }
+        }
+
+npm install from your mirror
+
+    npm install -r http://mymirrors.com/npm/ package
 
 ## Contributing
 
