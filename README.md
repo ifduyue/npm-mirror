@@ -29,22 +29,22 @@ Here is an example of config.yml
 
 Serving via Nginx
 
-        server {
-            listen 0.0.0.0:80;
-            server_name mymirrors.com;
-            root /data/mirrors/;
-            location /npm/ {
-                index index.json;
+    server {
+        listen 0.0.0.0:80;
+        server_name mymirrors.com;
+        root /data/mirrors/;
+        location /npm/ {
+            index index.json;
 
-                location ~ /\.index\.json.etag$ {
-                    return 404;
-                }
+            location ~ /\.index\.json.etag$ {
+                return 404;
+            }
 
-                location ~ /index\.json$ {
-                    default_type application/json;
-                }
+            location ~ /index\.json$ {
+                default_type application/json;
             }
         }
+    }
 
 npm install from your mirror
 
