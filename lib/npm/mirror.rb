@@ -61,14 +61,16 @@ module Npm
         puts "[#{id}] Fetched(#{resp.code}): #{uri}"
         case resp.code.to_i
         when 301  # Moved
+          return fetch resp['location'], path
         when 302  # Found
           return fetch resp['location'], path
         when 200
+          return resp
         when 304  # Not modified
           return resp
         when 403
           return nil
-        when 404
+        when 404  # couchdb returns json even it's 404
           return resp
         else
           fail Error, "unexpected response #{resp.inspect}"
