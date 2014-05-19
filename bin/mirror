@@ -1,5 +1,22 @@
 #!/usr/bin/env ruby
 
+require 'yaml'
 require 'npm/mirror'
-mirror = Npm::Mirror::Mirror.new
-mirror.run
+
+if ARGV.empty?
+  Npm::Mirror::Mirror.new.run
+else
+  ARGV.each do |config_file|
+    configs = YAML.load_file config_file
+    fail "Invalid config file #{config_file}" unless configs.respond_to? :each
+
+    configs.each do |config|
+      from = config['from']
+      to = File.expand_path config['to']
+      server = config['server']
+      parallelism = config['parallelism']
+      mirror = Npm::Mirror::Mirror.new(from, to, server, parallelism)
+      mirror.run
+    end
+  end
+end
