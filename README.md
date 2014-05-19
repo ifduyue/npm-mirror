@@ -26,6 +26,7 @@ Here is an example of config.yml
       to: /data/mirrors/npm
       server: http://mymirrors.com/npm/
       parallelism: 10
+      recheck: false
 
 Serving via Nginx
 

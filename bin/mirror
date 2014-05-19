@@ -15,7 +15,8 @@ else
       to = File.expand_path config['to']
       server = config['server']
       parallelism = config['parallelism']
-      mirror = Npm::Mirror::Mirror.new(from, to, server, parallelism)
+      recheck = config['recheck']
+      mirror = Npm::Mirror::Mirror.new(from, to, server, parallelism, recheck)
       mirror.run
     end
   end

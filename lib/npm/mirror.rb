@@ -11,17 +11,21 @@ module Npm
     class Error < StandardError; end
 
     class Mirror
-      attr_reader :from, :to, :server, :parrellism
+      attr_reader :from, :to, :server, :parallelism
 
       def initialize(from = DEFAULT_FROM, to = DEFAULT_TO,
-                     server = DEFAULT_SERVER, parrellism = 10)
+                     server = DEFAULT_SERVER, parallelism = 10,
+                     recheck = false)
         @from, @to, @server = from, to, server
-        @pool = Pool.new parrellism
+        @pool = Pool.new parallelism
         @http = Net::HTTP::Persistent.new self.class.name
+        @recheck = recheck
 
         puts "Mirroring  : #{from}"
         puts "Datadir    : #{to}"
         puts "Server     : #{server}"
+        puts "Parallelism: #{parallelism}"
+        puts "Recheck    : #{recheck}"
       end
 
       def from(*args)
@@ -72,7 +76,8 @@ module Npm
         when 200
           return resp
         when 304  # Not modified
-          return resp
+          return resp if @recheck
+          return nil
         when 403
           return nil
         when 404  # couchdb returns json even it's 404
