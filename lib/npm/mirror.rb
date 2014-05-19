@@ -46,11 +46,9 @@ module Npm
       def fetch(url, path = nil)
         puts "[#{id}] Fetching #{url}"
         uri = URI url
-        mtime = mtime_for path
         etag = etag_for path
 
         req = Net::HTTP::Get.new uri.path
-        req.add_field 'If-Modified-Since', mtime if mtime
         req.add_field 'If-None-Match', etag if etag
 
         begin
@@ -92,7 +90,7 @@ module Npm
         json.each_key do |k|
           @pool.enqueue_job(k, &method(:fetch_package)) unless k.start_with? '_'
         end
-        write_file path, resp.body, resp['last-modified'], resp['etag']
+        write_file path, resp.body, resp['etag']
       end
 
       def fetch_package(package)
@@ -102,7 +100,7 @@ module Npm
         return if resp.nil?
         json = JSON.load resp.body
         tarball_links json
-        write_file path, json.to_json, resp['last-modified'], resp['etag']
+        write_file path, json.to_json, resp['etag']
       end
 
       def fetch_tarball(tarball_uri)
@@ -110,14 +108,12 @@ module Npm
         path = to tarball_uri
         resp = fetch url, path
         return if resp.nil? || resp.body.size.zero?
-        write_file path, resp.body, resp['last-modified'], resp['etag']
+        write_file path, resp.body, resp['etag']
       end
 
-      def write_file(path, bytes, mtime = nil, etag = nil)
+      def write_file(path, bytes, etag = nil)
         FileUtils.mkdir_p File.dirname(path)
         File.open(path, 'wb') { |f| f << bytes }
-        mtime = Time.rfc822 mtime if mtime
-        File.utime(mtime, mtime, path) if mtime
         File.open(path_for_etag(path), 'wb') { |f| f << etag } if etag
       end
 
@@ -158,16 +154,6 @@ module Npm
           nil
         elsif File.file?(etag_path) && File.readable?(etag_path)
           File.open(etag_path, 'rb') { |f| f.readline.strip }
-        else
-          nil
-        end
-      end
-
-      def mtime_for(path)
-        if path.nil?
-          nil
-        elsif File.exist?(path)
-          File.stat(path).mtime.rfc822
         else
           nil
         end
