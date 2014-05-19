@@ -147,7 +147,6 @@ module Npm
             end
           end
         end
-        json
       end
 
       def run
