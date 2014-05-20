@@ -17,6 +17,8 @@ module Npm
                      server = DEFAULT_SERVER, parallelism = 10,
                      recheck = false)
         @from, @to, @server = from, to, server
+        parallelism ||= 10
+        check ||= false
         @pool = Pool.new parallelism
         @http = Net::HTTP::Persistent.new self.class.name
         @recheck = recheck
