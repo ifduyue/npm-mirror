@@ -18,7 +18,7 @@ module Npm
                      recheck = false)
         @from, @to, @server = from, to, server
         parallelism ||= 10
-        check ||= false
+        recheck ||= false
         @pool = Pool.new parallelism
         @http = Net::HTTP::Persistent.new self.class.name
         @recheck = recheck
@@ -60,9 +60,7 @@ module Npm
 
         begin
           resp = @http.request uri, req
-          if resp.code == '503'  # 503 backend read error
-            fail Error, '503'
-          end
+          fail Error, '503' if resp.code == '503'  # 503 backend read error
         rescue => e
           puts "[#{id}] Error fetching #{uri.path}: #{e.inspect}"
           sleep 10
@@ -134,6 +132,15 @@ module Npm
           json = JSON.load resp.body
           tarball_links json
           write_file path, json.to_json, resp['etag']
+          write_package_versions(package, json)
+        end
+      end
+
+      def write_package_versions(package, json)
+        return unless json['versions']
+        json['versions'].each do |k, v|
+          path = to package, k, 'index.json'
+          write_file path, v.to_json, nil
         end
       end
 
@@ -204,10 +211,11 @@ module Npm
           versions.each do |version|
             next unless json['versions'][version]['dist']
             tarball = URI json['versions'][version]['dist']['tarball']
-            tarball = link tarball.request_uri
+            tarball = link tarball.path
             json['versions'][version]['dist']['tarball'] = tarball
           end
           File.open(filename, 'wb') { |f| f << json.to_json }
+          write_package_versions json['name'], json
           puts filename
         end
       end
