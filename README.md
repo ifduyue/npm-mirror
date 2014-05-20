@@ -14,11 +14,11 @@ And then execute:
 
 ## Usage
 
-    $ bundle exec bin/mirror
+    $ bundle exec bin/npm-mirror [path/to/config.yml]
 
 Or:
 
-    $ bundle exec bin/mirror path/to/config.yml
+    $ npm-mirror [path/to/config.yml]
 
 Here is an example of config.yml
 
