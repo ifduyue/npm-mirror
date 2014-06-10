@@ -1,6 +1,7 @@
 # NPM Mirror 
 
 [![Gem Version](https://badge.fury.io/rb/npm-mirror.svg)](http://badge.fury.io/rb/npm-mirror)
+[![Code Climate](https://codeclimate.com/github/ifduyue/npm-mirror.png)](https://codeclimate.com/github/ifduyue/npm-mirror)
 
 A NPM Mirror that doesn't need couchdb.
 
