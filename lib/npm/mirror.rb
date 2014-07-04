@@ -1,5 +1,6 @@
 require 'net/http/persistent'
 require 'json'
+require 'fileutils'
 
 require 'npm/mirror/version'
 require 'npm/mirror/config'
@@ -130,6 +131,7 @@ module Npm
           tarball_links json
         else
           json = JSON.load resp.body
+          deal_with_removals_for json
           tarball_links json
           write_file path, json.to_json, resp['etag']
           write_package_versions(package, json)
@@ -217,6 +219,18 @@ module Npm
           File.open(filename, 'wb') { |f| f << json.to_json }
           write_package_versions json['name'], json
           puts filename
+        end
+      end
+
+      def deal_with_removals_for(package_json)
+        return unless package_json['versions']
+
+        package = package_json['name']
+        theirs = package_json['versions'].keys
+        ours = Dir.glob("#{to}/#{package}/*").map { |x| File.basename x }
+        removals = ours - theirs
+        removals.each do |version|
+          FileUtils.rm_rf "#{to}/#{package}/#{version}"
         end
       end
     end
