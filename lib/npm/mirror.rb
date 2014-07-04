@@ -162,18 +162,17 @@ module Npm
 
       def tarball_links(json)
         json.each do |_, v|
-          if v.is_a? Hash
-            if v['shasum'] && v['tarball']
-              if v['tarball'].start_with?(@from)
-                tarball = v['tarball'].split(/^#{@from}/, 2).last
-                v['tarball'] = link tarball
-              elsif v['tarball'].start_with?(@server)
-                tarball = v['tarball'].split(/^#{@server}/, 2).last
-              end
-              @pool.enqueue_job(tarball, &method(:fetch_tarball))
-            else
-              tarball_links v
+          next unless v.is_a? Hash
+          if v['shasum'] && v['tarball']
+            if v['tarball'].start_with?(@from)
+              tarball = v['tarball'].split(/^#{@from}/, 2).last
+              v['tarball'] = link tarball
+            elsif v['tarball'].start_with?(@server)
+              tarball = v['tarball'].split(/^#{@server}/, 2).last
             end
+            @pool.enqueue_job(tarball, &method(:fetch_tarball))
+          else
+            tarball_links v
           end
         end
       end
