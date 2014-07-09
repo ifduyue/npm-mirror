@@ -1,5 +1,5 @@
 require 'net/http/persistent'
-require 'json'
+require 'yajl/json_gem'
 require 'fileutils'
 
 require 'npm/mirror/version'
